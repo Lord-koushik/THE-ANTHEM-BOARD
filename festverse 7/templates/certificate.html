@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Certificate{% endblock %}
+{% block body %}
+<div class="cert"><p class="muted" style="margin:0">The Anthem Board</p><h1>Certificate of {{ c.cert_type }}</h1>
+<p>This is to certify that</p><div class="nm">{{ c.person }}</div>
+<p>{% if c.cert_type=='Winner' %}secured <b>rank {{ c.rank }}</b> in{% else %}participated in{% endif %} <b>{{ c.event_name }}</b> ({{ c.category }}) held on {{ c.start_time.strftime('%d %B %Y') }}.</p></div>
+<p class="right noprint mt"><button class="btn" onclick="window.print()">Print or save as PDF</button></p>
+{% endblock %}

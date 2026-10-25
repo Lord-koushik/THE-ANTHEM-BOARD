@@ -1,0 +1,11 @@
+{% macro csrf() %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}">{% endmacro %}
+{% macro badge(s) %}<span class="badge b-{{ s }}">{{ s|capitalize }}</span>{% endmacro %}
+{% macro ecard(e) %}
+<a class="card ecard cat cat-{{ e.category }}" href="{{ url_for('event', eid=e.event_id) }}">
+  <div class="row between"><span class="small muted"><span class="dot"></span>{{ e.category }}{% if e.is_team %} (teams of {{ e.min_team }}-{{ e.max_team }}){% endif %}</span>{{ badge(e.status) }}</div>
+  <h3>{{ e.name }}</h3>
+  <div class="small muted">{{ e.start_time|dt }} at {{ e.venue }}</div>
+  <div class="bar" title="{{ e.confirmed }} of {{ e.capacity }} seats taken"><i style="width:{{ [100, (e.confirmed * 100 / e.capacity)|round]|min }}%"></i></div>
+  <div class="row between small"><span>{% if e.seats_left > 0 %}{{ e.seats_left }} seats left{% else %}Full, {{ e.waitlisted }} waitlisted{% endif %}</span><b>{% if e.fee > 0 %}{{ e.fee|money }}{% else %}Free{% endif %}</b></div>
+</a>
+{% endmacro %}

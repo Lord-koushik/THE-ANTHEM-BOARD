@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Database not running{% endblock %}
+{% block body %}
+<div class="card" style="max-width:760px;margin:0 auto">
+  <h1 style="font-size:2rem">The database isn't running yet</h1>
+  <p class="muted">The Anthem Board stores everything in PostgreSQL, and the app couldn't reach a server. Pick whichever option is easiest:</p>
+  <h3>Option 1: no install (recommended)</h3>
+  <pre class="q">pip install -r requirements-local.txt
+python app.py</pre>
+  <p class="small muted">This downloads a small embedded PostgreSQL into the project folder, starts it, builds the tables and loads demo data automatically.</p>
+  <h3>Option 2: Docker</h3>
+  <pre class="q">docker compose up -d
+python app.py</pre>
+  <h3>Option 3: your own PostgreSQL (Mac with Homebrew)</h3>
+  <pre class="q">brew install postgresql@16 &amp;&amp; brew services start postgresql@16
+psql postgres -c "CREATE USER fest WITH PASSWORD 'fest' SUPERUSER;"
+psql postgres -c "CREATE DATABASE festverse OWNER fest;"
+python app.py</pre>
+  <p><a class="btn gold" href="{{ request.url }}">I started it, try again</a></p>
+  <details><summary class="small muted">Technical detail</summary><pre class="q">{{ detail }}</pre></details>
+</div>
+{% endblock %}

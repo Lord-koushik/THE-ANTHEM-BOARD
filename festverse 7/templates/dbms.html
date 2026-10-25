@@ -1,0 +1,76 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}DB Lab{% endblock %}
+{% block body %}
+<h1>DB Lab</h1>
+<p class="muted" style="max-width:46em">A guided tour of the database behind The Anthem Board. Everything below is read live from PostgreSQL's catalog, so it always matches what is actually deployed.</p>
+<div class="stats" style="margin:0 0 26px">{% for k in ['tables','views','triggers','functions','indexes'] %}<div><b>{{ counts[k] }}</b><span>{{ k }}</span></div>{% endfor %}</div>
+
+<div class="card mb"><h2>Where each DBMS concept lives</h2><div class="scroll"><table>
+<tr><th>Concept</th><th>In this project</th></tr>
+<tr><td>Normalisation (3NF)</td><td>No repeated groups: <code>colleges</code>, <code>venues</code>, <code>teams</code>, <code>coupons</code> are separate tables referenced by key. Derived values (seats left, revenue, rank, profit) are computed in views, never stored, so they cannot go stale.</td></tr>
+<tr><td>Constraints</td><td>PK, FK with <code>ON DELETE</code> rules, <code>CHECK</code> (fee, ratings, wallet &ge; 0, end &gt; start), <code>UNIQUE</code>, and a partial unique index (<code>uq_active_registration</code>) so cancelled rows don't block re-registering.</td></tr>
+<tr><td>Triggers</td><td>Venue clash, participant time clash, team size, seat limit with auto-waitlist, refund on cancel, waitlist promotion, judge conflict of interest, resource over-booking, check-in rules, audit trail. See the list below.</td></tr>
+<tr><td>Stored functions</td><td><code>register_for_event</code>, <code>cancel_registration</code>, <code>topup_wallet</code>, <code>scan_checkin</code>, <code>promote_waitlist</code>, <code>fn_recommend</code>, <code>fn_has_conflict</code>.</td></tr>
+<tr><td>Transactions (ACID)</td><td>Registration debits the wallet, uses the coupon, inserts the row and logs the payment as one unit. If a trigger rejects it (clash, full team), everything rolls back. Each web request is a single transaction.</td></tr>
+<tr><td>Concurrency control</td><td><code>SELECT ... FOR UPDATE</code> on the event row serialises seat counting, so two people can't take the last seat. Waitlist promotion uses <code>SKIP LOCKED</code>.</td></tr>
+<tr><td>Views</td><td><code>v_event_stats</code>, <code>v_leaderboard</code>, <code>v_my_registrations</code> (participant dashboard), <code>v_fest_summary</code> (admin), <code>v_college_points</code>, <code>v_certificates</code>, and more.</td></tr>
+<tr><td>Window functions + CTEs</td><td><code>v_leaderboard</code> averages judges per round, sums rounds, and uses <code>RANK() OVER (PARTITION BY event ORDER BY total, best round)</code> for tie-breaking.</td></tr>
+<tr><td>Joins and aggregates</td><td>Self-join in <code>fn_recommend</code> ("people who joined X also joined Y"), <code>FILTER</code> aggregates, multi-way joins in analytics.</td></tr>
+<tr><td>Indexing</td><td>Composite and partial indexes below, plus a live before/after benchmark.</td></tr>
+<tr><td>Security / RBAC</td><td>Postgres roles with <code>GRANT</code>/<code>REVOKE</code> (below), column-level privileges hiding password hashes, plus app-level role checks and CSRF tokens.</td></tr>
+<tr><td>Auditing</td><td>Generic <code>audit_row()</code> trigger records old/new JSONB and the acting user (passed via <code>set_config('app.user_id')</code>).</td></tr>
+</table></div></div>
+
+<div class="card mb"><h2>Entity-relationship diagram</h2><div class="er"><pre class="mermaid">
+erDiagram
+  COLLEGES ||--o{ USERS : "studies at"
+  VENUES ||--o{ EVENTS : hosts
+  USERS ||--o{ EVENTS : coordinates
+  EVENTS ||--o{ TEAMS : has
+  USERS ||--o{ TEAMS : leads
+  EVENTS ||--o{ REGISTRATIONS : receives
+  USERS ||--o{ REGISTRATIONS : makes
+  TEAMS |o--o{ REGISTRATIONS : includes
+  COUPONS |o--o{ REGISTRATIONS : discounts
+  REGISTRATIONS ||--o{ PAYMENTS : billed
+  USERS ||--o{ PAYMENTS : owns
+  REGISTRATIONS ||--o{ CHECKINS : scanned
+  REGISTRATIONS ||--o{ SCORES : receives
+  USERS ||--o{ SCORES : "judges"
+  REGISTRATIONS ||--o| FEEDBACK : rated
+  EVENTS ||--o{ JUDGE_ASSIGNMENTS : has
+  USERS ||--o{ JUDGE_ASSIGNMENTS : assigned
+  EVENTS ||--o{ VOLUNTEER_SHIFTS : staffed
+  USERS ||--o{ VOLUNTEER_SHIFTS : works
+  EVENTS ||--o{ ALLOCATIONS : uses
+  RESOURCES ||--o{ ALLOCATIONS : allocated
+  SPONSORS ||--o{ SPONSORSHIPS : gives
+  EVENTS |o--o{ SPONSORSHIPS : funded
+  EVENTS |o--o{ EXPENSES : costs
+  USERS ||--o{ NOTIFICATIONS : receives
+</pre></div></div>
+
+<div class="grid g2 mb">
+<div class="card"><h2>Triggers</h2><div class="scroll" style="max-height:420px"><table><tr><th>Table</th><th>Trigger</th><th>When</th></tr>{% for t in triggers %}<tr><td>{{ t.tbl }}</td><td><code>{{ t.name }}</code></td><td class="small">{{ t.timing }}</td></tr>{% endfor %}</table></div></div>
+<div class="card"><h2>Indexes</h2><div class="scroll" style="max-height:420px"><table><tr><th>Table</th><th>Index</th></tr>{% for i in indexes %}<tr><td>{{ i.tablename }}</td><td><code>{{ i.indexname }}</code></td></tr>{% endfor %}</table></div></div>
+</div>
+
+<div class="card mb"><h2>Role-based access (GRANT / REVOKE)</h2>
+{% if grants %}<div class="scroll"><table><tr><th>Role</th><th>Table</th><th>Privileges</th></tr>{% for g in grants %}<tr><td>{{ g.grantee }}</td><td>{{ g.table_name }}</td><td class="small">{{ g.privs }}</td></tr>{% endfor %}</table></div>
+{% else %}<p class="muted">The database user on this host isn't allowed to create roles, so the grants were skipped. They are defined at the bottom of <code>schema.sql</code>.</p>{% endif %}</div>
+
+{% if admin %}
+<div class="card mb" id="bench"><h2>Index benchmark</h2>
+<p class="muted">Builds a throwaway 300,000-row table, times a lookup with no index, adds an index, times it again, then rolls everything back.</p>
+<form method="post" action="{{ url_for('benchmark') }}">{{ m.csrf() }}<button class="btn gold">Run benchmark</button></form>
+{% if bench %}<pre class="q">{{ bench.query }}</pre>
+<div class="grid g3"><div class="card"><div class="small muted">Without index</div><div class="sc">{{ bench.before.ms }} ms</div><div class="small">{{ bench.before.scan }}</div></div>
+<div class="card"><div class="small muted">With index</div><div class="sc">{{ bench.after.ms }} ms</div><div class="small">{{ bench.after.scan }}</div></div>
+<div class="card"><div class="small muted">Speed-up</div><div class="sc">about {{ bench.speedup }}x</div></div></div>{% endif %}</div>
+
+<div class="card" id="console"><h2>Read-only SQL console</h2>
+<p class="muted">Run a single SELECT. The connection is opened read-only at the PostgreSQL level, so nothing can be changed from here.</p>
+<form method="post" action="{{ url_for('console') }}">{{ m.csrf() }}<textarea name="sql" aria-label="SQL" style="font-family:monospace">{{ console.sql if console else 'SELECT * FROM v_leaderboard ORDER BY event_id, rank LIMIT 10' }}</textarea><button class="btn mt">Run</button></form>
+{% if console %}{% if console.error %}<div class="result err">{{ console.error }}</div>{% else %}<p class="small muted mt">{{ console.rows|length }} row(s) in {{ console.ms }} ms</p><div class="scroll"><table><tr>{% for c in console.cols %}<th>{{ c }}</th>{% endfor %}</tr>{% for r in console.rows %}<tr>{% for v in r %}<td class="small">{{ v }}</td>{% endfor %}</tr>{% endfor %}</table></div>{% endif %}{% endif %}</div>
+{% endif %}
+<script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs';mermaid.initialize({startOnLoad:true,theme:'neutral'});</script>
+{% endblock %}

@@ -1,0 +1,3 @@
+# For running on your own computer: includes an embedded PostgreSQL so nothing else needs installing.
+-r requirements.txt
+pgserver>=0.1.4

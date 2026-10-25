@@ -1,0 +1,22 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Gate scanner{% endblock %}
+{% block body %}
+<h1>Gate scanner</h1><p class="muted">Scan a participant's QR ticket. The database decides whether it is an entry or an exit and blocks duplicates, waitlisted tickets and incomplete teams.</p>
+<div class="scanbox">
+  <div id="reader" class="mb"></div>
+  <form id="f" class="inline">{{ m.csrf() }}<div><label for="t">Or paste the ticket code</label><input id="t" placeholder="FV:xxxxxxxx-xxxx-..." autocomplete="off"></div><button class="btn">Check in</button></form>
+  <div id="out" role="status" aria-live="polite"></div>
+</div>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const CSRF="{{ csrf_token() }}",out=document.getElementById('out');let last="",lastAt=0;
+async function send(tok){
+  const r=await fetch("{{ url_for('api_checkin') }}",{method:'POST',headers:{'Content-Type':'application/json','X-CSRF':CSRF},body:JSON.stringify({token:tok})});
+  const d=await r.json();
+  out.className='result '+(d.ok?'ok':'err');
+  out.textContent=d.ok?`${d.direction==='in'?'ENTRY':'EXIT'}: ${d.name}${d.team?' ('+d.team+')':''}, ${d.event}`:d.message;
+}
+document.getElementById('f').onsubmit=e=>{e.preventDefault();const v=document.getElementById('t').value.trim();if(v){send(v);document.getElementById('t').value=''}};
+if(window.Html5QrcodeScanner){new Html5QrcodeScanner("reader",{fps:10,qrbox:240},false).render(t=>{const n=Date.now();if(t===last&&n-lastAt<4000)return;last=t;lastAt=n;send(t)},()=>{})}
+else{document.getElementById('reader').innerHTML='<div class="empty">Camera scanner unavailable (offline?). Use the paste box.</div>'}
+</script>
+{% endblock %}

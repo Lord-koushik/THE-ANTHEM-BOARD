@@ -1,0 +1,30 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Home{% endblock %}
+{% block body %}
+<section class="hero">
+  <div>
+    <h1>One fest.<br>Every event,<br>one <b>verse</b>.</h1>
+    <p>Register for events, split the fee with your team, show your QR at the gate and watch the leaderboard move while the judges score.</p>
+    <div class="row"><a class="btn gold" href="{{ url_for('events') }}">Browse events</a>{% if not me %}<a class="btn sec" href="{{ url_for('signup') }}">Create account</a>{% endif %}</div>
+    <div class="stats">
+      <div><b>{{ summary.events }}</b><span>events</span></div><div><b>{{ summary.participants }}</b><span>participants</span></div>
+      <div><b>{{ summary.colleges }}</b><span>colleges</span></div><div><b>{{ summary.checkins }}</b><span>gate entries</span></div>
+    </div>
+  </div>
+  <div class="board">
+    <h3>{% if live %}Happening now{% else %}Up next{% endif %}</h3><div class="tag">Live from the database</div>
+    {% for e in live + nxt %}{% if loop.index <= 6 %}
+    <a class="bi" href="{{ url_for('event', eid=e.event_id) }}"><span class="t">{{ e.start_time|hm }}<small>{{ e.start_time.strftime('%a %d %b') }}</small></span>
+      <span>{{ e.name }}<small>{{ e.venue }}</small></span>
+      <span>{% if e.status=='live' %}<span class="badge b-live">Live</span>{% elif e.seats_left > 0 %}<small>{{ e.seats_left }} left</small>{% else %}<small>Waitlist</small>{% endif %}</span></a>
+    {% endif %}{% else %}<div class="bi"><span></span><span>No events yet.</span><span></span></div>{% endfor %}
+  </div>
+</section>
+<div class="grid g2">
+  <div class="card"><h2>Top-rated events</h2>
+    {% for e in top %}<div class="row between" style="padding:7px 0;border-bottom:1px solid var(--line)"><a href="{{ url_for('event', eid=e.event_id) }}">{{ e.name }}</a><span><span style="color:var(--marigold)">{{ e.avg_rating|stars }}</span> <small class="muted">{{ e.avg_rating }} ({{ e.feedback_count }})</small></span></div>
+    {% else %}<p class="muted">Ratings appear after events finish.</p>{% endfor %}</div>
+  <div class="card"><h2>College championship</h2>
+    <ul class="lb">{% for c in champs %}<li><span class="rk r{{ loop.index }}">{{ loop.index }}</span><span>{{ c.college }}<br><small class="muted">{{ c.golds }} gold, {{ c.silvers }} silver, {{ c.bronzes }} bronze</small></span><span class="sc">{{ c.points }}</span></li>
+    {% else %}<li class="muted">Points start counting once events complete.</li>{% endfor %}</ul></div>
+</div>
+{% endblock %}

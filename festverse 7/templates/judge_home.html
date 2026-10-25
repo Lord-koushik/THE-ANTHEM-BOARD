@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Judging{% endblock %}
+{% block body %}
+<h1>My judging assignments</h1>
+<div class="grid g3">{% for e in rows %}<a class="card ecard cat cat-{{ e.category }}" href="{{ url_for('judge_event', eid=e.event_id) }}"><div class="row between"><span class="small muted">{{ e.category }}</span>{{ m.badge(e.status) }}</div><h3>{{ e.name }}</h3><div class="small muted">{{ e.start_time|dt }} at {{ e.venue }}</div><div class="small">{{ e.confirmed }} entries, {{ e.rounds }} round{{ 's' if e.rounds>1 }}</div></a>
+{% else %}<div class="empty" style="grid-column:1/-1">You haven't been assigned to any event yet.</div>{% endfor %}</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Schedule{% endblock %}
+{% block body %}
+<h1>Schedule</h1>
+<div class="tabs"><a href="{{ url_for('schedule') }}" class="{{ 'on' if not ven }}">All venues</a>{% for v in venues %}<a href="{{ url_for('schedule', venue=v.venue_id) }}" class="{{ 'on' if ven==v.venue_id }}">{{ v.name }}</a>{% endfor %}</div>
+{% for d, evs in days.items() %}
+  <div class="day">{{ d|day }}</div>
+  {% for e in evs %}<div class="tl cat cat-{{ e.category }}"><div class="t">{{ e.start_time|hm }} to {{ e.end_time|hm }}</div>
+    <div><a href="{{ url_for('event', eid=e.event_id) }}"><span class="dot"></span><b>{{ e.name }}</b></a> {{ m.badge(e.status) }}<br><span class="small muted">{{ e.venue }} · {{ e.category }} · {{ e.seats_left if e.seats_left>0 else 'full' }}{{ ' seats left' if e.seats_left>0 }}</span></div></div>{% endfor %}
+{% else %}<div class="empty">Nothing scheduled at this venue.</div>{% endfor %}
+{% endblock %}

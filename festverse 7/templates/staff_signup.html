@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Staff sign-up{% endblock %}
+{% block body %}
+<div class="card" style="max-width:520px;margin:0 auto"><h1 style="font-size:2rem">Staff sign-up</h1>
+<p class="muted small">For admins, coordinators, judges and volunteers. You need the access code for your role from the fest admin. Students should use the <a href="{{ url_for('signup') }}">normal sign-up</a>.</p>
+{% if not roles %}<div class="flash err">Staff sign-up is switched off. Ask the admin to set the role access codes.</div>{% else %}
+<form method="post" novalidate>{{ m.csrf() }}
+<div class="field"><label for="r">Role <span class="req">*</span></label><select id="r" name="role" required class="{{ 'bad' if errs.role }}">{% for r in roles %}<option value="{{ r }}" {{ 'selected' if f.get('role')==r }}>{{ r|capitalize }}</option>{% endfor %}</select>{% if errs.role %}<div class="ferr">{{ errs.role }}</div>{% endif %}</div>
+<div class="field"><label for="ac">Access code <span class="req">*</span></label><input id="ac" name="access_code" autocomplete="off" required class="{{ 'bad' if errs.access_code }}">{% if errs.access_code %}<div class="ferr">{{ errs.access_code }}</div>{% endif %}</div>
+<div class="field"><label for="n">Full name</label><input id="n" name="name" value="{{ f.get('name','') }}" required>{% if errs.name %}<div class="ferr">{{ errs.name }}</div>{% endif %}</div>
+<div class="field"><label for="e">Email</label><input id="e" name="email" type="email" value="{{ f.get('email','') }}" required>{% if errs.email %}<div class="ferr">{{ errs.email }}</div>{% endif %}</div>
+<div class="field"><label for="p">Password (6+ characters)</label><input id="p" name="password" type="password" minlength="6" required>{% if errs.password %}<div class="ferr">{{ errs.password }}</div>{% endif %}</div>
+<div class="field"><label for="c">College <span class="req">*</span></label><select id="c" name="college_id" required class="{{ 'bad' if errs.college_id }}"><option value="">Select your college</option>{% for c in colleges %}<option value="{{ c.college_id }}" {{ 'selected' if f.get('college_id')==c.college_id|string }}>{{ c.name }}, {{ c.city }}</option>{% endfor %}</select>{% if errs.college_id %}<div class="ferr">{{ errs.college_id }}</div>{% endif %}<div class="small muted">Judges are blocked from scoring entries from their own college, so this must be accurate.</div></div>
+<div class="field"><label for="ph">Phone (optional)</label><input id="ph" name="phone" inputmode="tel" value="{{ f.get('phone','') }}"></div>
+<button class="btn gold">Create staff account</button></form>{% endif %}</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Manage {{ ev.name }}{% endblock %}
+{% set act = url_for('manage_do', eid=ev.event_id) %}
+{% macro del(action, k, v) %}<form class="plain" method="post" action="{{ act }}">{{ m.csrf() }}<input type="hidden" name="action" value="{{ action }}"><input type="hidden" name="{{ k }}" value="{{ v }}"><button class="btn sm danger" aria-label="Remove">Remove</button></form>{% endmacro %}
+{% block body %}
+<div class="row between"><div><a class="small" href="{{ url_for('manage') }}">All events</a><h1 style="margin:0">{{ ev.name }}</h1><span class="muted small">{{ ev.start_time|dt }} at {{ ev.venue }}</span></div>
+<div class="row"><a class="btn sec" href="{{ url_for('event_form', eid=ev.event_id) }}">Edit details</a><a class="btn sec" href="{{ url_for('event_form', eid=ev.event_id) }}#qr">Event QR</a><a class="btn sec" href="{{ url_for('event_csv', eid=ev.event_id) }}">Export CSV</a><a class="btn sec" href="{{ url_for('event', eid=ev.event_id) }}">Public page</a></div></div>
+<div class="grid g4 mt">
+  <div class="card"><b class="sc">{{ ev.confirmed }}/{{ ev.capacity }}</b><br><span class="small muted">confirmed ({{ ev.waitlisted }} waitlisted)</span></div>
+  <div class="card"><b class="sc">{{ ev.revenue|money }}</b><br><span class="small muted">net registration revenue</span></div>
+  <div class="card"><b class="sc">{{ (ev.sponsorship - ev.expenses)|money }}</b><br><span class="small muted">sponsorship minus expenses</span></div>
+  <div class="card"><form method="post" action="{{ act }}" class="inline">{{ m.csrf() }}<input type="hidden" name="action" value="status"><div><label for="st">Status</label><select id="st" name="status">{% for s in ['scheduled','live','completed','cancelled'] %}<option {{ 'selected' if s==ev.status }}>{{ s }}</option>{% endfor %}</select></div><button class="btn sm">Set</button></form><p class="small muted" style="margin:6px 0 0">Cancelling refunds everyone.</p></div>
+</div>
+<div class="card mt"><h2>Registrations</h2><div class="scroll"><table><tr><th>Name</th><th>College</th><th>Team</th><th>Status</th><th>Paid</th><th>Entered</th><th></th></tr>
+{% for r in regs %}<tr><td>{{ r.name }}<br><small class="muted">{{ r.email }}</small></td><td class="small">{{ r.college }}</td><td>{{ r.team or '' }}</td><td>{{ m.badge(r.status) }}</td><td>{{ r.amount_paid|money }}</td><td>{{ 'Yes' if r.attended else '' }}</td>
+<td class="right">{% if r.status!='cancelled' %}<form class="plain" method="post" action="{{ url_for('cancel', rid=r.reg_id) }}" onsubmit="return confirm('Cancel and refund?')">{{ m.csrf() }}<button class="btn sm danger">Cancel</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">Nobody yet.</td></tr>{% endfor %}</table></div>
+{% if teams %}<h3 class="mt">Teams</h3><div class="scroll"><table><tr><th>Team</th><th>Leader</th><th>Members</th><th>Ready?</th></tr>{% for t in teams %}<tr><td>{{ t.name }}</td><td>{{ t.leader }}</td><td>{{ t.members }} (needs {{ t.min_team }} to {{ t.max_team }})</td><td>{{ 'Ready' if t.ready else 'Below minimum size' }}</td></tr>{% endfor %}</table></div>{% endif %}</div>
+<div class="grid g2 mt">
+<div class="card"><h2>Judges</h2>
+  {% for j in judges %}<div class="row between" style="padding:5px 0">{{ j.name }} <small class="muted">{{ j.college }}</small>{{ del('del_judge','judge_id',j.user_id) }}</div>{% else %}<p class="muted small">No judges assigned.</p>{% endfor %}
+  <form method="post" action="{{ act }}" class="inline mt">{{ m.csrf() }}<input type="hidden" name="action" value="add_judge"><div><label for="j">Assign judge</label><select id="j" name="judge_id">{% for j in all_judges %}<option value="{{ j.user_id }}">{{ j.name }} ({{ j.college or 'no college' }})</option>{% endfor %}</select></div><button class="btn">Assign</button></form>
+  <p class="small muted">A judge can't be double-booked, and can't score entries from their own college.</p></div>
+<div class="card"><h2>Volunteer shifts</h2>
+  {% for s in shifts %}<div class="row between" style="padding:5px 0"><span>{{ s.name }}: {{ s.task }}<br><small class="muted">{{ s.shift_start|dt }} to {{ s.shift_end|hm }}</small></span>{{ del('del_shift','shift_id',s.shift_id) }}</div>{% else %}<p class="muted small">No shifts yet.</p>{% endfor %}
+  <form method="post" action="{{ act }}" class="mt">{{ m.csrf() }}<input type="hidden" name="action" value="add_shift">
+    <div class="inline"><div><label for="vv">Volunteer</label><select id="vv" name="volunteer_id">{% for v in vols %}<option value="{{ v.user_id }}">{{ v.name }}</option>{% endfor %}</select></div><div><label for="tk">Task</label><input id="tk" name="task" required></div></div>
+    <div class="inline mt"><div><label for="ss">From</label><input id="ss" type="datetime-local" name="shift_start" value="{{ ev.start_time|inp }}" required></div><div><label for="se">To</label><input id="se" type="datetime-local" name="shift_end" value="{{ ev.end_time|inp }}" required></div><button class="btn">Add</button></div></form></div>
+<div class="card"><h2>Resources</h2>
+  {% for a in allocs %}<div class="row between" style="padding:5px 0">{{ a.qty }} x {{ a.name }} <small class="muted">{{ a.type }}</small>{{ del('del_alloc','resource_id',a.resource_id) }}</div>{% else %}<p class="muted small">Nothing allocated.</p>{% endfor %}
+  <form method="post" action="{{ act }}" class="inline mt">{{ m.csrf() }}<input type="hidden" name="action" value="add_alloc"><div><label for="rs">Resource</label><select id="rs" name="resource_id">{% for r in resources %}<option value="{{ r.resource_id }}">{{ r.name }} ({{ r.total_qty }})</option>{% endfor %}</select></div><div><label for="qt">Qty</label><input id="qt" type="number" min="1" name="qty" value="1"></div><button class="btn">Allocate</button></form>
+  <p class="small muted">The database blocks over-booking when events overlap in time.</p></div>
+<div class="card"><h2>Expenses</h2>
+  {% for x in exps %}<div class="row between" style="padding:5px 0"><span>{{ x.category }}{% if x.description %}: {{ x.description }}{% endif %}</span><b>{{ x.amount|money }}</b>{{ del('del_expense','expense_id',x.expense_id) }}</div>{% else %}<p class="muted small">No expenses recorded.</p>{% endfor %}
+  <form method="post" action="{{ act }}" class="inline mt">{{ m.csrf() }}<input type="hidden" name="action" value="add_expense"><div><label for="ec">Category</label><input id="ec" name="category" required></div><div><label for="ed">Note</label><input id="ed" name="description"></div><div><label for="ea">Amount</label><input id="ea" type="number" step="0.01" min="1" name="amount" required></div><button class="btn">Add</button></form></div>
+</div>
+{% endblock %}

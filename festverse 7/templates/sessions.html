@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Sessions{% endblock %}
+{% block body %}
+<h1>Login sessions</h1>{% include '_admin_nav.html' %}
+<p class="muted">Every login is a row in the <code>login_sessions</code> table. "Active" means not logged out and seen in the last 30 minutes. You can query the same data from VS Code: <code>SELECT * FROM v_active_sessions;</code></p>
+<div class="card mb scroll"><h2>Logged in right now ({{ active|length }})</h2>
+<table><tr><th>User</th><th>Role</th><th>College</th><th>Logged in</th><th>Last seen</th><th>IP</th><th></th></tr>
+{% for s in active %}<tr><td><b>{{ s.name }}</b><br><small class="muted">{{ s.email }}</small></td><td><span class="badge">{{ s.role }}</span></td><td class="small">{{ s.college or '' }}</td><td class="small">{{ s.logged_in_at|dt }}</td><td class="small">{{ s.last_seen|dt }}</td><td class="small">{{ s.ip_address }}</td>
+<td class="right">{% if s.session_id|string == my_sid %}<span class="small muted">this is you</span>{% else %}<form class="plain" method="post" action="{{ url_for('force_logout', sid=s.session_id) }}" onsubmit="return confirm('Log {{ s.name }} out?')">{{ m.csrf() }}<button class="btn sm danger">Force logout</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">Nobody is logged in.</td></tr>{% endfor %}</table></div>
+<div class="grid g2">
+<div class="card scroll"><h2>Login history</h2><table><tr><th>User</th><th>Logged in</th><th>State</th><th>Minutes</th></tr>
+{% for h in history %}<tr><td>{{ h.name }}<br><small class="muted">{{ h.role }}</small></td><td class="small">{{ h.logged_in_at|dt }}</td><td><span class="badge {{ 'b-confirmed' if h.state=='active' }}">{{ h.state }}</span></td><td>{{ h.minutes|int }}</td></tr>{% endfor %}</table></div>
+<div class="card scroll"><h2>Recent login attempts</h2><table><tr><th>Email</th><th>Result</th><th>When</th></tr>
+{% for a in attempts %}<tr><td class="small">{{ a.email }}</td><td><span class="badge {{ 'b-confirmed' if a.success else 'b-cancelled' }}">{{ 'success' if a.success else 'failed' }}</span></td><td class="small">{{ a.attempted_at|dt }}</td></tr>{% else %}<tr><td colspan="3" class="muted">None yet.</td></tr>{% endfor %}</table></div>
+</div>
+{% endblock %}

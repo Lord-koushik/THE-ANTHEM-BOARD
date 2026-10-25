@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Events{% endblock %}
+{% block body %}
+<h1>Events</h1>
+<form class="inline card mb" method="get">
+  <div><label for="q">Search</label><input id="q" name="q" value="{{ term }}" placeholder="Name or description"></div>
+  <div><label for="c">Category</label><select id="c" name="category"><option value="">All</option>{% for c in CATS %}<option {{ 'selected' if c==cat }}>{{ c }}</option>{% endfor %}</select></div>
+  <div><label for="s">Status</label><select id="s" name="status"><option value="">Any</option>{% for s in ['scheduled','live','completed'] %}<option value="{{ s }}" {{ 'selected' if s==st }}>{{ s|capitalize }}</option>{% endfor %}</select></div>
+  <button class="btn">Filter</button>
+</form>
+<div class="grid g3">{% for e in rows %}{{ m.ecard(e) }}{% else %}<div class="empty" style="grid-column:1/-1">No events match. Try clearing the filters.</div>{% endfor %}</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Sign up{% endblock %}
+{% block body %}
+<div class="card" style="max-width:520px;margin:0 auto"><h1 style="font-size:2rem">Create your account</h1>
+<form method="post" novalidate>{{ m.csrf() }}
+<div class="field"><label for="n">Full name</label><input id="n" name="name" value="{{ f.get('name','') }}" required>{% if errs.name %}<div class="ferr">{{ errs.name }}</div>{% endif %}</div>
+<div class="field"><label for="e">Email</label><input id="e" name="email" type="email" value="{{ f.get('email','') }}" required>{% if errs.email %}<div class="ferr">{{ errs.email }}</div>{% endif %}</div>
+<div class="field"><label for="p">Password (6+ characters)</label><input id="p" name="password" type="password" minlength="6" required>{% if errs.password %}<div class="ferr">{{ errs.password }}</div>{% endif %}</div>
+<div class="field"><label for="c">College <span class="req">*</span></label><select id="c" name="college_id" required class="{{ 'bad' if errs.college_id }}"><option value="">Select your college</option>{% for c in colleges %}<option value="{{ c.college_id }}" {{ 'selected' if f.get('college_id')==c.college_id|string }}>{{ c.name }}, {{ c.city }}</option>{% endfor %}</select>{% if errs.college_id %}<div class="ferr">{{ errs.college_id }}</div>{% endif %}</div>
+<div class="field"><label for="ph">Phone (optional)</label><input id="ph" name="phone" inputmode="tel" value="{{ f.get('phone','') }}"></div>
+<button class="btn">Create account</button></form>
+<p class="small muted mt">Organiser, judge or volunteer? <a href="{{ url_for('staff_signup') }}">Staff sign-up</a></p></div>
+{% endblock %}

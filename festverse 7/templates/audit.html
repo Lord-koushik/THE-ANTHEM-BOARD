@@ -1,0 +1,9 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Audit log{% endblock %}
+{% block body %}
+<h1>Audit log</h1>{% include '_admin_nav.html' %}
+<p class="muted">Written by one generic trigger (<code>audit_row</code>) on seven tables: who changed what, with old and new values stored as JSONB.</p>
+<div class="tabs"><a href="{{ url_for('admin_audit') }}" class="{{ 'on' if not tbl }}">All</a>{% for t in tables %}<a href="{{ url_for('admin_audit', table=t) }}" class="{{ 'on' if t==tbl }}">{{ t }}</a>{% endfor %}</div>
+<div class="card scroll"><table><tr><th>When</th><th>Who</th><th>Table</th><th>Row</th><th>Action</th><th>Change</th></tr>
+{% for r in rows %}<tr><td class="small nowrap">{{ r.changed_at|dt }}</td><td class="small">{{ r.who or 'system' }}</td><td>{{ r.table_name }}</td><td>{{ r.record_id }}</td><td><span class="badge">{{ r.action }}</span></td><td class="small">{{ r.diff }}</td></tr>
+{% else %}<tr><td colspan="6" class="muted">Nothing logged.</td></tr>{% endfor %}</table></div>
+{% endblock %}

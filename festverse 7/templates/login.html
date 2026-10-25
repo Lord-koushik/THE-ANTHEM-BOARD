@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Log in{% endblock %}
+{% block body %}
+<div class="grid g2" style="align-items:stretch;max-width:900px;margin:0 auto">
+  <div class="card" style="padding:30px">
+    <h1 style="font-size:2.2rem">Welcome back</h1>
+    <p class="muted">Log in to register for events, see your QR tickets and track your wallet.</p>
+    <form method="post">{{ m.csrf() }}
+      <div class="field"><label for="e">Email</label><input id="e" name="email" type="email" required autofocus autocomplete="username"></div>
+      <div class="field"><label for="p">Password</label><input id="p" name="password" type="password" required autocomplete="current-password"></div>
+      <label class="small" style="font-weight:500"><input type="checkbox" onclick="document.getElementById('p').type=this.checked?'text':'password'"> Show password</label>
+      <button class="btn gold" style="width:100%;margin-top:14px;padding:12px">Log in</button>
+    </form>
+    <p class="small muted mt">New to The Anthem Board? <a href="{{ url_for('signup') }}">Create an account</a></p>
+    <p class="small muted" style="margin-top:4px">Organiser, judge or volunteer? <a href="{{ url_for('staff_signup') }}">Staff sign-up (access code needed)</a></p>
+  </div>
+  <div class="card" style="background:var(--ink);color:#fff;border:0;padding:30px">
+    <h2 style="color:#fff">Try a demo role</h2><p style="color:#B9B5DE" class="small">One click logs you in. Each role sees a different side of the system.</p>
+    {% for label, em, pw, hint in [('Admin','admin@festverse.in','admin123','analytics, finance, sessions, audit'),('Coordinator','priya@festverse.in','fest123','create events, assign judges'),('Judge','judge1@festverse.in','fest123','score entries'),('Volunteer','volunteer1@festverse.in','fest123','shifts and QR scanner'),('Participant','student@festverse.in','fest123','register, wallet, tickets')] %}
+    <form method="post" style="margin:0 0 8px">{{ m.csrf() }}<input type="hidden" name="email" value="{{ em }}"><input type="hidden" name="password" value="{{ pw }}">
+      <button class="btn sec" style="width:100%;text-align:left;display:flex;justify-content:space-between"><b>{{ label }}</b><span class="muted small" style="font-weight:500">{{ hint }}</span></button></form>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

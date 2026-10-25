@@ -1,0 +1,9 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Users{% endblock %}
+{% block body %}
+<h1>Users</h1>{% include '_admin_nav.html' %}
+<form class="inline card mb" method="get"><div><label for="q">Search name or email</label><input id="q" name="q" value="{{ term }}"></div><button class="btn">Search</button></form>
+<div class="card scroll"><table><tr><th>Name</th><th>College</th><th>Wallet</th><th>Role</th></tr>
+{% for u in rows %}<tr><td>{{ u.name }}<br><small class="muted">{{ u.email }}</small></td><td class="small">{{ u.college or '' }}</td><td>{{ u.wallet_balance|money }}</td>
+<td><form method="post" action="{{ url_for('user_role', uid=u.user_id) }}" class="row" style="flex-wrap:nowrap">{{ m.csrf() }}<select name="role" aria-label="Role for {{ u.name }}" style="width:150px" {{ 'disabled' if u.user_id==me.user_id }}>{% for r in ['participant','volunteer','judge','coordinator','admin'] %}<option {{ 'selected' if r==u.role }}>{{ r }}</option>{% endfor %}</select>{% if u.user_id!=me.user_id %}<button class="btn sm">Save</button>{% endif %}</form></td></tr>{% endfor %}</table>
+<p class="small muted">Showing up to 150 users. Promote people to judge, volunteer or coordinator here.</p></div>
+{% endblock %}

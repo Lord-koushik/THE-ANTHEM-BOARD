@@ -1,0 +1,4 @@
+{% set ep = request.endpoint %}
+<div class="tabs noprint">
+{% for e, l in [('admin','Analytics'),('admin_finance','Finance'),('admin_catalog','Catalog'),('admin_users','Users'),('admin_sessions','Sessions'),('admin_audit','Audit log')] %}<a href="{{ url_for(e) }}" class="{{ 'on' if ep==e }}">{{ l }}</a>{% endfor %}
+<a href="{{ url_for('dbms') }}">DB Lab</a></div>

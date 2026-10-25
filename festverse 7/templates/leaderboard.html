@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Leaderboard{% endblock %}
+{% block body %}
+<h1>Leaderboard</h1>
+<div class="split">
+<div class="grid g2">
+{% for (eid, name, st), rows in by.items() %}<div class="card"><div class="row between"><h3><a href="{{ url_for('event', eid=eid) }}">{{ name }}</a></h3>{{ m.badge(st) }}</div>
+  <ul class="lb">{% for r in rows %}<li><span class="rk r{{ r.rank }}">{{ r.rank }}</span><span>{{ r.entry_name }}<br><small class="muted">{{ r.college }}</small></span><span class="sc">{{ r.total }}</span></li>{% endfor %}</ul></div>
+{% else %}<div class="empty" style="grid-column:1/-1">Scores will show up here as judges submit them.</div>{% endfor %}
+</div>
+<aside class="card"><h2>College championship</h2><p class="small muted">10 / 6 / 3 points for 1st / 2nd / 3rd in completed events.</p>
+  <ul class="lb">{% for c in champs %}<li><span class="rk r{{ loop.index }}">{{ loop.index }}</span><span>{{ c.college }}<br><small class="muted">{{ c.golds }}G {{ c.silvers }}S {{ c.bronzes }}B</small></span><span class="sc">{{ c.points }}</span></li>{% else %}<li class="muted">No completed events scored yet.</li>{% endfor %}</ul></aside>
+</div>
+{% endblock %}

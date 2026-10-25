@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Ticket{% endblock %}
+{% block body %}
+<div class="card ticket cat cat-{{ r.category }}">
+  <p class="small muted" style="margin:0">{{ r.category }}</p><h2>{{ r.event_name }}</h2>
+  <div style="margin:10px auto">{{ svg|safe }}</div>
+  <h3 style="margin-bottom:2px">{{ owner }}</h3>{% if r.team_name %}<div class="muted">Team {{ r.team_name }}</div>{% endif %}
+  <p class="small">{{ r.start_time|dt }}<br>{{ r.venue }}</p>{{ m.badge(r.status) }}
+  {% if r.status=='waitlisted' %}<p class="small muted">Waitlisted: this ticket will only work once you are confirmed.</p>{% endif %}
+  <p class="small muted mt">Show this code at the gate. Each scan toggles entry and exit.</p>
+  <button class="btn sec sm noprint" onclick="window.print()">Print ticket</button>
+</div>
+{% endblock %}

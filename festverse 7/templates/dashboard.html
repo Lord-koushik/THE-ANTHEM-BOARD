@@ -1,0 +1,32 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}My dashboard{% endblock %}
+{% block body %}
+<div class="row between"><h1>Hi, {{ me.name.split()[0] }}</h1><span class="badge">{{ me.role|capitalize }}</span></div>
+<div class="split">
+<div class="grid">
+  <div class="card"><h2>My registrations</h2>
+  {% if regs %}<div class="scroll"><table><tr><th>Event</th><th>When</th><th>Status</th><th>Paid</th><th></th></tr>
+  {% for r in regs %}<tr class="cat cat-{{ r.category }}"><td><span class="dot"></span><a href="{{ url_for('event', eid=r.event_id) }}"><b>{{ r.event_name }}</b></a>{% if r.team_name %}<br><small class="muted">Team {{ r.team_name }}</small>{% endif %}</td>
+    <td class="small">{{ r.start_time|dt }}<br><span class="muted">{{ r.venue }}</span></td>
+    <td>{{ m.badge(r.status) }}{% if r.status=='waitlisted' %}<br><small class="muted">#{{ r.waitlist_pos }} in line</small>{% endif %}{% if r.attended %}<br><small class="muted">Attended</small>{% endif %}</td>
+    <td>{{ r.amount_paid|money }}</td>
+    <td class="right nowrap">
+      {% if r.status!='cancelled' %}<a class="btn sm gold" href="{{ url_for('ticket', rid=r.reg_id) }}">QR ticket</a>{% endif %}
+      {% if r.status!='cancelled' and r.event_status=='scheduled' %}<form class="plain" method="post" action="{{ url_for('cancel', rid=r.reg_id) }}" onsubmit="return confirm('Cancel this registration? Your fee goes back to your wallet.')">{{ m.csrf() }}<button class="btn sm danger">Cancel</button></form>{% endif %}
+      {% if r.attended and not r.my_rating %}<details><summary class="small">Rate it</summary>
+        <form method="post" action="{{ url_for('feedback', rid=r.reg_id) }}">{{ m.csrf() }}<select name="rating" aria-label="Rating">{% for i in [5,4,3,2,1] %}<option value="{{ i }}">{{ i }} star{{ 's' if i>1 }}</option>{% endfor %}</select><input name="comment" placeholder="Say something (optional)"><button class="btn sm">Send</button></form></details>
+      {% elif r.my_rating %}<div class="small muted">You rated {{ r.my_rating|stars }}</div>{% endif %}
+    </td></tr>{% endfor %}</table></div>
+  {% else %}<div class="empty">You haven't registered for anything yet. <a href="{{ url_for('events') }}">Browse events</a></div>{% endif %}</div>
+  {% if certs %}<div class="card"><h2>My certificates</h2>{% for c in certs %}<div class="row between" style="padding:6px 0"><span>{{ c.event_name }} <span class="badge">{{ c.cert_type }}{% if c.rank and c.rank<=3 %} #{{ c.rank }}{% endif %}</span></span><a class="btn sm sec" href="{{ url_for('certificate', rid=c.reg_id) }}">View / print</a></div>{% endfor %}</div>{% endif %}
+  <div class="card"><h2>Wallet history</h2>
+    <table>{% for p in pays %}<tr><td class="small">{{ p.created_at|dt }}</td><td>{{ p.note }}</td><td class="right" style="color:{{ 'var(--red)' if p.kind=='registration' else 'var(--green)' }}">{{ '-' if p.kind=='registration' else '+' }}{{ p.amount|money }}</td></tr>
+    {% else %}<tr><td class="muted">No transactions yet.</td></tr>{% endfor %}</table></div>
+</div>
+<div class="grid">
+  <div class="card"><h3>Wallet</h3><div class="sc" style="font-size:2rem">{{ me.wallet_balance|money }}</div>
+    <form method="post" action="{{ url_for('topup') }}" class="inline mt">{{ m.csrf() }}<div><label for="a">Add money</label><input id="a" name="amount" type="number" min="10" max="20000" value="500"></div><button class="btn gold">Top up</button></form>
+    <p class="small muted">Demo wallet: no real payment is taken.</p></div>
+  <div class="card"><div class="row between"><h3>Notifications</h3>{% if unread %}<form class="plain" method="post" action="{{ url_for('notifs_read') }}">{{ m.csrf() }}<button class="btn sm sec">Mark read</button></form>{% endif %}</div>
+    {% for n in notifs %}<p class="small" style="margin:.4em 0;{{ 'font-weight:600' if not n.is_read }}">{{ n.message }}<br><span class="muted" style="font-weight:400">{{ n.created_at|dt }}</span></p>{% else %}<p class="muted small">Nothing yet.</p>{% endfor %}</div>
+</div></div>
+{% endblock %}

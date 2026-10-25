@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Score {{ ev.name }}{% endblock %}
+{% block body %}
+<a class="small" href="{{ url_for('judge_home') }}">My assignments</a><div class="row between"><h1 style="margin:0">{{ ev.name }}</h1>{{ m.badge(ev.status) }}</div>
+{% if ev.rounds>1 %}<div class="tabs mt">{% for i in range(1, ev.rounds+1) %}<a href="{{ url_for('judge_event', eid=ev.event_id, round=i) }}" class="{{ 'on' if i==rd }}">Round {{ i }}</a>{% endfor %}</div>{% endif %}
+{% if ev.status not in ('live','completed') %}<div class="flash err">Scoring opens when the coordinator sets this event to live.</div>{% endif %}
+<form method="post" class="card mt">{{ m.csrf() }}<input type="hidden" name="round" value="{{ rd }}">
+<h2>Round {{ rd }} scores (0 to 100)</h2>
+<div class="scroll"><table><tr><th>Entry</th><th>College</th><th style="width:120px">Score</th><th>Remarks</th></tr>
+{% for e in entries %}<tr><td><b>{{ e.entry_name }}</b></td><td class="small">{{ e.college }}</td>
+{% if e.conflict %}<td colspan="2"><span class="badge b-cancelled">Conflict of interest</span> <small class="muted">same college as you, locked by the database</small></td>
+{% else %}<td><input type="number" step="0.1" min="0" max="100" name="score_{{ e.reg_id }}" value="{{ e.score if e.score is not none }}" aria-label="Score for {{ e.entry_name }}"></td><td><input name="remarks_{{ e.reg_id }}" value="{{ e.remarks or '' }}" aria-label="Remarks"></td>{% endif %}</tr>
+{% else %}<tr><td colspan="4" class="muted">No confirmed entries.</td></tr>{% endfor %}</table></div>
+<p class="small muted">Saving is all-or-nothing: if any single score is rejected, none are stored.</p>
+<button class="btn gold">Save scores</button></form>
+{% endblock %}

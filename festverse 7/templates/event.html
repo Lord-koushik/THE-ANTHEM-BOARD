@@ -1,0 +1,50 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}{{ ev.name }}{% endblock %}
+{% block body %}
+<div class="cat cat-{{ ev.category }}">
+<div class="row between"><div><span class="small muted"><span class="dot"></span>{{ ev.category }}</span><h1 style="margin:4px 0">{{ ev.name }}</h1></div>{{ m.badge(ev.status) }}</div>
+<p class="muted">{{ ev.start_time|dt }} to {{ ev.end_time|hm }} at <b>{{ ev.venue }}</b>{% if ev.venue_location %} ({{ ev.venue_location }}){% endif %}. Coordinator: {{ ev.coordinator or 'TBA' }}.</p>
+</div>
+<div class="split">
+<div class="grid">
+  <div class="card"><h2>About</h2><p>{{ ev.description }}</p>
+    <div class="grid g3 small">
+      <div><b>{{ ev.fee|money if ev.fee > 0 else 'Free' }}</b><br><span class="muted">entry fee</span></div>
+      <div><b>{{ ev.confirmed }} / {{ ev.capacity }}</b><br><span class="muted">seats taken{% if ev.waitlisted %}, {{ ev.waitlisted }} waitlisted{% endif %}</span></div>
+      <div><b>{% if ev.is_team %}{{ ev.min_team }} to {{ ev.max_team }} members{% else %}Individual{% endif %}</b><br><span class="muted">{{ ev.rounds }} round{{ 's' if ev.rounds>1 }}</span></div>
+    </div>
+    {% if judges %}<p class="small muted mt">Judges: {% for j in judges %}{{ j.name }}{% if j.college %} ({{ j.college }}){% endif %}{{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
+  </div>
+  {% if lb %}<div class="card"><div class="row between"><h2>{% if ev.status=='live' %}Live leaderboard{% else %}Final standings{% endif %}</h2>{% if ev.status=='live' %}<span class="small muted">refreshes every 8s</span>{% endif %}</div>
+    <ul class="lb" id="lb">{% for r in lb %}<li><span class="rk r{{ r.rank }}">{{ r.rank }}</span><span>{{ r.entry_name }}<br><small class="muted">{{ r.college }}</small></span><span class="sc">{{ r.total }}</span></li>{% endfor %}</ul></div>{% endif %}
+  {% if ev.feedback_count %}<div class="card"><div class="row between"><h2>What people said</h2><span style="color:var(--marigold)">{{ ev.avg_rating|stars }} <small class="muted">{{ ev.avg_rating }} from {{ ev.feedback_count }}</small></span></div>
+    {% for r in reviews %}<p style="margin:.3em 0"><b>{{ r.name.split()[0] }}</b> <span style="color:var(--marigold)">{{ r.rating|stars }}</span> {{ r.comment }}</p>{% endfor %}</div>{% endif %}
+  {% if recs %}<div class="card"><h2>People who joined this also joined</h2>
+    {% for r in recs %}<div class="row between" style="padding:6px 0"><a href="{{ url_for('event', eid=r.event_id) }}">{{ r.name }}</a><span class="small muted">{{ r.common_participants }} in common</span></div>{% endfor %}</div>{% endif %}
+</div>
+<aside class="card">
+  {% if not me %}<h3>Want in?</h3><p class="muted">Log in to register and get your QR ticket.</p><a class="btn" href="{{ url_for('login', next=request.path) }}">Log in</a>
+  {% elif my %}<h3>You're registered</h3><p>{{ m.badge(my.status) }}{% if my.team_name %} as <b>{{ my.team_name }}</b>{% endif %}</p>
+    {% if my.status=='waitlisted' %}<p class="small muted">Waitlist position {{ my.waitlist_pos }}. You'll be confirmed automatically if a seat opens.</p>{% endif %}
+    <a class="btn gold" href="{{ url_for('ticket', rid=my.reg_id) }}">Show my QR ticket</a>
+    {% if ev.status=='scheduled' %}<form class="plain mt" method="post" action="{{ url_for('cancel', rid=my.reg_id) }}" onsubmit="return confirm('Cancel and get a refund?')">{{ m.csrf() }}<button class="btn danger sm">Cancel registration</button></form>{% endif %}
+  {% elif ev.status != 'scheduled' %}<h3>Registration closed</h3><p class="muted">This event is {{ ev.status }}.</p>
+  {% else %}
+    <h3>Register</h3>
+    <form method="post" action="{{ url_for('register', eid=ev.event_id) }}">{{ m.csrf() }}
+      {% if ev.is_team %}
+        <div class="field"><label><input type="radio" name="mode" value="create" checked> Create a team</label><input name="team_name" placeholder="Team name" aria-label="Team name"></div>
+        {% set open_teams = teams|selectattr('members','lt',ev.max_team)|list %}
+        {% if open_teams %}<div class="field"><label><input type="radio" name="mode" value="join"> Join a team</label>
+          <select name="team_id" aria-label="Team to join">{% for t in open_teams %}<option value="{{ t.team_id }}">{{ t.name }} ({{ t.members }}/{{ t.max_team }}, led by {{ t.leader }})</option>{% endfor %}</select></div>{% endif %}
+      {% else %}<input type="hidden" name="mode" value="solo">{% endif %}
+      <div class="field"><label for="cp">Coupon code</label><input id="cp" name="coupon" placeholder="e.g. FEST20" autocomplete="off"></div>
+      <p class="small muted">Fee {{ ev.fee|money }} is taken from your wallet ({{ me.wallet_balance|money }}).{% if ev.seats_left <= 0 %} The event is full: you'll join the waitlist.{% endif %}</p>
+      <button class="btn gold" style="width:100%">{% if ev.seats_left <= 0 %}Join waitlist{% else %}Register{% endif %}</button>
+    </form>
+  {% endif %}
+</aside>
+</div>
+{% if ev.status=='live' and lb %}<script>
+setInterval(async()=>{try{const r=await fetch("{{ url_for('api_leaderboard', eid=ev.event_id) }}");const d=await r.json();
+document.getElementById('lb').innerHTML=d.map(x=>`<li><span class="rk r${x.rank}">${x.rank}</span><span>${x.entry_name}<br><small class="muted">${x.college||''}</small></span><span class="sc">${x.total}</span></li>`).join('')}catch(e){}},8000)</script>{% endif %}
+{% endblock %}

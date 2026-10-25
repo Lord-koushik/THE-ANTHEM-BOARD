@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Finance{% endblock %}
+{% block body %}
+<h1>Finance</h1>{% include '_admin_nav.html' %}
+<div class="grid g4">
+  <div class="card"><b class="sc">{{ summary.revenue|money }}</b><br><span class="small muted">registration revenue</span></div>
+  <div class="card"><b class="sc">{{ summary.sponsorship|money }}</b><br><span class="small muted">sponsorship received</span></div>
+  <div class="card"><b class="sc">{{ summary.expenses|money }}</b><br><span class="small muted">expenses</span></div>
+  <div class="card"><b class="sc" style="color:{{ 'var(--green)' if summary.revenue + summary.sponsorship - summary.expenses >= 0 else 'var(--red)' }}">{{ (summary.revenue + summary.sponsorship - summary.expenses)|money }}</b><br><span class="small muted">fest net</span></div>
+</div>
+<div class="card mt scroll"><h2>Profit and loss by event</h2><table><tr><th>Event</th><th>Revenue</th><th>Sponsorship</th><th>Expenses</th><th>Profit</th></tr>
+{% for e in ev %}<tr><td>{{ e.name }}</td><td>{{ e.revenue|money }}</td><td>{{ e.sponsorship|money }}</td><td>{{ e.expenses|money }}</td><td><b style="color:{{ 'var(--green)' if e.profit >= 0 else 'var(--red)' }}">{{ e.profit|money }}</b></td></tr>{% endfor %}</table>
+<p class="small muted">Comes straight from the <code>v_event_stats</code> view. Fest-wide sponsorship and expenses (not tied to an event) are only in the totals above.</p></div>
+<div class="grid g2 mt">
+<div class="card"><h2>Sponsors</h2>
+  <table>{% for s in sponsors %}<tr><td>{{ s.name }}</td><td><span class="badge">{{ s.tier }}</span></td><td class="right">{{ s.total|money }}</td></tr>{% endfor %}</table>
+  <form method="post" class="inline mt">{{ m.csrf() }}<input type="hidden" name="action" value="add_sponsor"><div><label for="sn">New sponsor</label><input id="sn" name="name" required></div><div><label for="st">Tier</label><select id="st" name="tier"><option>Title</option><option>Gold</option><option>Silver</option><option selected>Bronze</option></select></div><button class="btn">Add</button></form>
+  <form method="post" class="inline mt">{{ m.csrf() }}<input type="hidden" name="action" value="add_sponsorship">
+    <div><label for="sp">Record funds from</label><select id="sp" name="sponsor_id">{% for s in sponsors %}<option value="{{ s.sponsor_id }}">{{ s.name }}</option>{% endfor %}</select></div>
+    <div><label for="se">For</label><select id="se" name="event_id"><option value="">Whole fest</option>{% for e in events %}<option value="{{ e.event_id }}">{{ e.name }}</option>{% endfor %}</select></div>
+    <div><label for="sa">Amount</label><input id="sa" type="number" min="1" step="0.01" name="amount" required></div><button class="btn">Record</button></form></div>
+<div class="card"><h2>Fest-wide expenses</h2>
+  <table>{% for x in fest_exp %}<tr><td>{{ x.category }}</td><td class="small muted">{{ x.description }}</td><td class="right">{{ x.amount|money }}</td></tr>{% else %}<tr><td class="muted">None yet.</td></tr>{% endfor %}</table>
+  <form method="post" class="inline mt">{{ m.csrf() }}<input type="hidden" name="action" value="add_expense"><div><label for="xc">Category</label><input id="xc" name="category" required></div><div><label for="xd">Note</label><input id="xd" name="description"></div><div><label for="xa">Amount</label><input id="xa" type="number" min="1" step="0.01" name="amount" required></div><button class="btn">Add</button></form></div>
+</div>
+{% endblock %}

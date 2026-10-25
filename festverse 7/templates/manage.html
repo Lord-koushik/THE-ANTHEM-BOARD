@@ -1,0 +1,9 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Manage events{% endblock %}
+{% block body %}
+<div class="row between"><h1>{{ 'All events' if me.role=='admin' else 'My events' }}</h1><a class="btn gold" href="{{ url_for('event_form') }}">New event</a></div>
+<div class="card scroll"><table><tr><th>Event</th><th>When</th><th>Venue</th><th>Seats</th><th>Revenue</th><th>Status</th><th></th></tr>
+{% for e in rows %}<tr><td><b>{{ e.name }}</b><br><small class="muted">{{ e.category }}</small></td><td class="small">{{ e.start_time|dt }}</td><td class="small">{{ e.venue }}</td>
+<td>{{ e.confirmed }}/{{ e.capacity }}{% if e.waitlisted %}<br><small class="muted">+{{ e.waitlisted }} waiting</small>{% endif %}</td><td>{{ e.revenue|money }}</td><td>{{ m.badge(e.status) }}</td>
+<td class="right"><a class="btn sm" href="{{ url_for('manage_event', eid=e.event_id) }}">Manage</a></td></tr>
+{% else %}<tr><td colspan="7" class="muted">No events yet. Create one.</td></tr>{% endfor %}</table></div>
+{% endblock %}

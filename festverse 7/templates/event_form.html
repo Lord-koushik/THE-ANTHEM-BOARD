@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}{{ 'Edit' if ev else 'New' }} event{% endblock %}
+{% block body %}
+<div class="card" style="max-width:760px;margin:0 auto"><h1 style="font-size:2rem">{{ 'Edit ' ~ ev.name if ev else 'Create event' }}</h1>
+<p class="small muted">Venue clashes, venue capacity and date rules are checked by the database when you save.</p>
+<form method="post">{{ m.csrf() }}
+<div class="grid g2">
+<div class="field"><label for="n">Name</label><input id="n" name="name" value="{{ ev.name if ev }}" required></div>
+<div class="field"><label for="c">Category</label><select id="c" name="category">{% for c in CATS %}<option {{ 'selected' if ev and ev.category==c }}>{{ c }}</option>{% endfor %}</select></div>
+<div class="field"><label for="v">Venue</label><select id="v" name="venue_id">{% for v in venues %}<option value="{{ v.venue_id }}" {{ 'selected' if ev and ev.venue_id==v.venue_id }}>{{ v.name }} (seats {{ v.capacity }})</option>{% endfor %}</select></div>
+{% if me.role=='admin' %}<div class="field"><label for="co">Coordinator</label><select id="co" name="coordinator_id">{% for c in coords %}<option value="{{ c.user_id }}" {{ 'selected' if (ev and ev.coordinator_id==c.user_id) or (not ev and c.user_id==me.user_id) }}>{{ c.name }}</option>{% endfor %}</select></div>{% endif %}
+<div class="field"><label for="s">Starts</label><input id="s" type="datetime-local" name="start_time" value="{{ ev.start_time|inp if ev }}" required></div>
+<div class="field"><label for="e">Ends</label><input id="e" type="datetime-local" name="end_time" value="{{ ev.end_time|inp if ev }}" required></div>
+<div class="field"><label for="f">Fee (Rs.)</label><input id="f" type="number" step="0.01" min="0" name="fee" value="{{ ev.fee if ev else 0 }}"></div>
+<div class="field"><label for="cp">Capacity (people)</label><input id="cp" type="number" min="1" name="capacity" value="{{ ev.capacity if ev else 50 }}" required></div>
+<div class="field"><label for="r">Rounds (1 to 5)</label><input id="r" type="number" min="1" max="5" name="rounds" value="{{ ev.rounds if ev else 1 }}"></div>
+<div class="field"><label><input type="checkbox" name="is_team" {{ 'checked' if ev and ev.is_team }}> Team event</label>
+  <div class="inline"><div><label for="mn">Min size</label><input id="mn" type="number" min="1" name="min_team" value="{{ ev.min_team if ev else 1 }}"></div><div><label for="mx">Max size</label><input id="mx" type="number" min="1" name="max_team" value="{{ ev.max_team if ev else 1 }}"></div></div></div>
+</div>
+<div class="field"><label for="d">Description</label><textarea id="d" name="description">{{ ev.description if ev and ev.description }}</textarea></div>
+<button class="btn gold">{{ 'Save changes' if ev else 'Create event' }}</button> <a class="btn sec" href="{{ url_for('manage') }}">Cancel</a></form></div>
+{% if ev %}<div class="card mt" style="box-shadow:none"><h2 id="qr">Event QR code</h2>
+<div class="qrbox"><img src="{{ url_for('event_qr_image', eid=ev.event_id, ext='png') }}" alt="QR code for {{ ev.name }}">
+<div><p class="small muted" style="max-width:30em">Unique to <b>{{ ev.name }}</b>. Print it and put it at the gate. A registered participant who scans it while logged in is checked in (scan again to check out). Staff who scan it land on this event's manage page.</p>
+<div class="row"><a class="btn sec sm" href="{{ url_for('event_qr_image', eid=ev.event_id, ext='png', dl=1) }}">Download PNG</a><a class="btn sec sm" href="{{ url_for('event_qr_image', eid=ev.event_id, ext='svg', dl=1) }}">Download SVG</a><a class="btn sec sm" target="_blank" href="{{ url_for('event_qr_image', eid=ev.event_id, ext='svg') }}">Open to print</a></div>
+<p class="small muted" style="word-break:break-all;margin-top:8px">{{ qr_url }}</p></div></div></div>{% endif %}
+{% endblock %}

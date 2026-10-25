@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}My shifts{% endblock %}
+{% block body %}
+<h1>My shifts</h1>
+<div class="card">{% for s in shifts %}<div class="tl"><div class="t">{{ s.shift_start|dt }}<br><small class="muted">to {{ s.shift_end|hm }}</small></div><div><b>{{ s.task }}</b><br><span class="small muted">{{ s.event_name }} at {{ s.venue }}</span></div></div>
+{% else %}<div class="empty">No shifts assigned yet.</div>{% endfor %}</div>
+<p class="mt"><a class="btn gold" href="{{ url_for('scan') }}">Open gate scanner</a></p>
+{% endblock %}

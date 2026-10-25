@@ -1,0 +1,34 @@
+{% extends 'base.html' %}{% import '_m.html' as m with context %}{% block title %}Admin{% endblock %}
+{% block body %}
+<h1>Admin</h1>{% include '_admin_nav.html' %}
+<div class="grid g4">
+  <div class="card"><b class="sc">{{ s.registrations }}</b><br><span class="small muted">confirmed registrations</span></div>
+  <div class="card"><b class="sc">{{ s.revenue|money }}</b><br><span class="small muted">registration revenue</span></div>
+  <div class="card"><b class="sc">{{ s.sponsorship|money }}</b><br><span class="small muted">sponsorship</span></div>
+  <div class="card"><b class="sc">{{ (s.revenue + s.sponsorship - s.expenses)|money }}</b><br><span class="small muted">net after {{ s.expenses|money }} expenses</span></div>
+</div>
+<div class="row mt noprint">
+  <form class="plain" method="post" action="{{ url_for('admin_sync') }}">{{ m.csrf() }}<button class="btn sec">Sync event statuses with the clock</button></form>
+  {% for n in ['events','registrations','payments','colleges','leaderboard'] %}<a class="btn sec" href="{{ url_for('export', name=n) }}">Export {{ n }} (CSV)</a>{% endfor %}
+  <button class="btn sec" onclick="window.print()">Print / save as PDF</button>
+  <form class="plain" method="post" action="{{ url_for('admin_reseed') }}" onsubmit="return confirm('This wipes ALL data and rebuilds the demo. Continue?')">{{ m.csrf() }}<button class="btn danger">Reset demo data</button></form>
+</div>
+<div class="grid g2 mt">
+  <div class="card"><h3>Revenue by event</h3><canvas id="c1" height="200"></canvas></div>
+  <div class="card"><h3>Registrations and gate entries by hour</h3><canvas id="c2" height="200"></canvas></div>
+  <div class="card"><h3>Seats taken by category</h3><canvas id="c3" height="200"></canvas></div>
+  <div class="card"><h3>Participants by college</h3><canvas id="c4" height="200"></canvas></div>
+</div>
+<div class="card mt scroll"><h3>Most popular events</h3><table><tr><th>Event</th><th>Confirmed</th><th>Waitlist</th><th>Fill</th><th>Revenue</th><th>Rating</th></tr>
+{% for e in popular %}<tr><td><a href="{{ url_for('manage_event', eid=e.event_id) }}">{{ e.name }}</a></td><td>{{ e.confirmed }}/{{ e.capacity }}</td><td>{{ e.waitlisted }}</td><td style="width:140px"><div class="bar"><i style="width:{{ [100,(e.confirmed*100/e.capacity)|round]|min }}%"></i></div></td><td>{{ e.revenue|money }}</td><td>{{ e.avg_rating or '-' }}</td></tr>{% endfor %}</table></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const P=['#F2A100','#E0457B','#0F8B8D','#5B4BDB','#8A3FD1','#2E9E5B','#D43F3F','#1E1B3A'];
+const rev={{ rev|tojson }},cats={{ cats|tojson }},col={{ colleges|tojson }};
+const base={plugins:{legend:{display:false}},maintainAspectRatio:true};
+new Chart(c1,{type:'bar',data:{labels:rev.map(r=>r.name),datasets:[{data:rev.map(r=>r.revenue),backgroundColor:P[0]}]},options:base});
+new Chart(c2,{type:'line',data:{labels:{{ hours|tojson }},datasets:[{label:'Registrations',data:{{ regs_h|tojson }},borderColor:P[1],tension:.3},{label:'Gate entries',data:{{ chk_h|tojson }},borderColor:P[2],tension:.3}]},options:{maintainAspectRatio:true}});
+new Chart(c3,{type:'doughnut',data:{labels:cats.map(r=>r.category),datasets:[{data:cats.map(r=>r.n),backgroundColor:P}]},options:{maintainAspectRatio:true}});
+new Chart(c4,{type:'bar',data:{labels:col.map(r=>r.name),datasets:[{data:col.map(r=>r.participants),backgroundColor:P[3]}]},options:{...base,indexAxis:'y'}});
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% import '_m.html' as m with context %}
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}The Anthem Board{% endblock %} | The Anthem Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body>
+{% set ep = request.endpoint or '' %}
+<nav class="nav"><div class="wrap">
+  <a class="brand" href="{{ url_for('home') }}">The Anthem <b>Board</b></a>
+  <a href="{{ url_for('events') }}" class="{{ 'on' if ep.startswith('event') and not ep.startswith('event_form') }}">Events</a>
+  <a href="{{ url_for('schedule') }}" class="{{ 'on' if ep=='schedule' }}">Schedule</a>
+  <a href="{{ url_for('leaderboard') }}" class="{{ 'on' if ep=='leaderboard' }}">Leaderboard</a>
+  <a href="{{ url_for('dbms') }}" class="{{ 'on' if ep=='dbms' }}">DB Lab</a>
+  <span class="sp"></span>
+  {% if me %}
+    {% if me.role in ('admin','coordinator') %}<a href="{{ url_for('manage') }}">Manage</a>{% endif %}
+    {% if me.role in ('admin','coordinator','volunteer') %}<a href="{{ url_for('scan') }}">Scan</a>{% endif %}
+    {% if me.role == 'judge' %}<a href="{{ url_for('judge_home') }}">Judging</a>{% endif %}
+    {% if me.role == 'volunteer' %}<a href="{{ url_for('volunteer_home') }}">My shifts</a>{% endif %}
+    {% if me.role == 'admin' %}<a href="{{ url_for('admin') }}">Admin</a>{% endif %}
+    <a href="{{ url_for('dashboard') }}">{{ me.name.split()[0] }}{% if unread %}<span class="pill">{{ unread }}</span>{% endif %}</a>
+    <form method="post" action="{{ url_for('logout') }}">{{ m.csrf() }}<button class="linkbtn">Log out</button></form>
+  {% else %}
+    <a href="{{ url_for('login') }}">Log in</a><a href="{{ url_for('signup') }}" class="on">Sign up</a>
+  {% endif %}
+</div></nav>
+<div class="bunting" aria-hidden="true"></div>
+<main><div class="wrap">
+  {% for cat, msg in get_flashed_messages(with_categories=true) %}<div class="flash {{ cat }}" role="status">{{ msg }}</div>{% endfor %}
+  {% block body %}{% endblock %}
+</div></main>
+<footer><div class="wrap">The Anthem Board, a DBMS project: Flask + PostgreSQL. Rules like clash detection, waitlists and conflict-of-interest checks run as database triggers.</div></footer>
+</body></html>

@@ -1,0 +1,6 @@
+# Optional: local PostgreSQL without installing anything.   docker compose up -d
+services:
+  db:
+    image: postgres:16
+    environment: { POSTGRES_USER: fest, POSTGRES_PASSWORD: fest, POSTGRES_DB: festverse }
+    ports: ["5432:5432"]
